@@ -9,6 +9,7 @@ from loguru import logger
 from contextlib import asynccontextmanager
 
 from app.db.admin import attach_admin_panel
+from app.services.account import AccountService
 
 
 class ProjectSettings(BaseSettings):
@@ -39,13 +40,21 @@ def register_cors(application):
     )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with AccountService() as account_service:
+        await account_service.authorize_accounts()
+    yield
+
+
 def init_web_application():
     project_settings = ProjectSettings()
     application = FastAPI(
         title="Task api",
         openapi_url='/openapi.json',
         docs_url='/docs',
-        redoc_url='/redoc'
+        redoc_url='/redoc',
+        lifespan=lifespan
     )
 
     if project_settings.LOCAL_MODE:

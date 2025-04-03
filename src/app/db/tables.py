@@ -47,10 +47,26 @@ class TaskItem(Base):
     id: M[int] = column(primary_key=True, index=True, autoincrement=True)
     task_id: M[UUID] = column(ForeignKey("tasks.id", ondelete="CASCADE"))
 
-    task: M["Task"] = relationship(back_populates="items")
+    external_id: M[str]
+    title: M[str]
+    music_url: M[str]
+
+    task: M["Task"] = relationship(back_populates="items", lazy="selectin")
 
 
 class Task(BaseMixin, Base):
     error: M[str | None] = column(nullable=True)
+    account_id: M[int] = column(ForeignKey("accounts.id", ondelete="CASCADE"))
+    user_id: M[str]
+    app_bundle: M[str]
 
     items: M[list["TaskItem"]] = relationship(back_populates="task", lazy="selectin")
+
+
+class Account(BaseMixin, Base):
+    id: M[int] = column(primary_key=True, index=True, autoincrement=True)
+
+    username: M[str]
+    client_id: M[str]
+    access_token: M[str | None]
+    refresh_token: M[str | None]
