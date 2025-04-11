@@ -67,6 +67,11 @@ class TaskKeyRoot(Enum):
     e = 'E'
     f = 'F'
     g = 'G'
+    c_is_d_es = "C#/Db"
+    d_is_e_es = "D#/Eb"
+    f_is_g_es = "F#/Gb"
+    g_is_a_es = "G#/Ab"
+    b_es = "Bb"
 
 
 class TaskStructureId(Enum):
