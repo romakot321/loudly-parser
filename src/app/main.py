@@ -42,8 +42,8 @@ def register_cors(application):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with AccountService() as account_service:
-        await account_service.authorize_accounts()
+    #async with AccountService() as account_service:
+    #    await account_service.authorize_accounts()
     yield
 
 

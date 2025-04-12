@@ -1,5 +1,6 @@
 from os import wait
 from pydantic import BaseModel
+from urllib.parse import quote_plus
 
 
 class ExternalGenerationRequest(BaseModel):
@@ -23,11 +24,12 @@ class ExternalAccountLimitsSchema(BaseModel):
 
 class ExternalAuthorizeRequestSchema(BaseModel):
     client_id: str
-    grant_type: str = "refresh_token"
-    refresh_token: str
+    grant_type: str
+    password: str | None = None
+    refresh_token: str | None = None
 
     def to_params(self) -> str:
-        return "&".join(f"{k}={v}" for k, v in self.model_dump().items())
+        return quote_plus("&".join(f"{k}={v}" for k, v in self.model_dump(exclude_none=True).items()))
 
 
 class ExternalAuthorizeResponseSchema(BaseModel):

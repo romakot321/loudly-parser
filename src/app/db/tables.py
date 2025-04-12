@@ -67,6 +67,7 @@ class Account(BaseMixin, Base):
     id: M[int] = column(primary_key=True, index=True, autoincrement=True)
 
     username: M[str]
+    password: M[str]
     client_id: M[str]
     access_token: M[str | None]
     refresh_token: M[str | None]

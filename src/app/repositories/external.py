@@ -20,7 +20,18 @@ class ExternalRepository:
     async def login_with_refresh_token(self, account: Account) -> ExternalAuthorizeResponseSchema:
         if account.refresh_token is None:
             raise ValueError("Account refresh token is None")
-        body = ExternalAuthorizeRequestSchema(client_id=account.client_id, refresh_token=account.refresh_token)
+        body = ExternalAuthorizeRequestSchema(client_id=account.client_id, refresh_token=account.refresh_token, grant_type="refresh_token")
+
+        async with ClientSession(base_url=self.EXTERNAL_API_URL, headers={"authorization": "Bearer " + account.access_token, "Content-Type": "application/x-www-form-urlencoded"}) as session:
+            resp = await session.post("/oauth/v2/token", data=body.to_params())
+            if resp.status // 2 != 2:
+                raise ValueError(await resp.text())
+            body = await resp.json()
+            logger.debug("Login response: " + str(body))
+            return ExternalAuthorizeResponseSchema.model_validate(body)
+
+    async def login_with_password(self, account: Account) -> ExternalAuthorizeResponseSchema:
+        body = ExternalAuthorizeRequestSchema(client_id=account.client_id, password=account.password, grant_type="password")
 
         async with ClientSession(base_url=self.EXTERNAL_API_URL, headers={"authorization": "Bearer " + account.access_token, "Content-Type": "application/x-www-form-urlencoded"}) as session:
             resp = await session.post("/oauth/v2/token", data=body.to_params())
