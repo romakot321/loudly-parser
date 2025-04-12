@@ -1,4 +1,6 @@
 from fastapi import Depends
+import asyncio
+from loguru import logger
 
 from app.db.tables import Account
 from app.repositories.account import AccountRepository
@@ -19,9 +21,13 @@ class AccountService:
         for account in accounts:
             if (await self.external_repository.get_limits(account)) is not None:
                 continue
-            tokens = await self.external_repository.login_with_refresh_token(
-                account
-            )
+            for attempt in range(3):
+                try:
+                    tokens = await self.external_repository.login_with_refresh_token(
+                        account
+                    )
+                except ValueError as e:
+                    tokens = await self.external_repository.login_with_password(account)
             await self.account_repository.update(
                 account.id,
                 refresh_token=tokens.refresh_token,

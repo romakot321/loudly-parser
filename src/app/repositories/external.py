@@ -52,7 +52,7 @@ class ExternalRepository:
                         part = mpwriter.append(i, {'content-type': 'form-data'})
                         part.set_content_disposition('form-data', name=key)
                     continue
-                part = mpwriter.append(value, {'content-type': 'form-data'})
+                part = mpwriter.append(str(value), {'content-type': 'form-data'})
                 part.set_content_disposition('form-data', name=key)
 
             async with ClientSession(base_url=self.EXTERNAL_API_URL, headers={"authorization": "Bearer " + access_token, "Content-Type": "multipart/form-data; boundary=" + boundary}) as session:

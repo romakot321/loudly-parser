@@ -4,6 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi_utils.tasks import repeat_every
 from pydantic_settings import BaseSettings
 from loguru import logger
 from contextlib import asynccontextmanager
@@ -40,10 +41,14 @@ def register_cors(application):
     )
 
 
-@asynccontextmanager
+@repeat_every(seconds=3000, wait_first=1, raise_exceptions=True)
+async def relogin_accounts():
+    async with AccountService() as account_service:
+        await account_service.authorize_accounts()
+
+
 async def lifespan(app: FastAPI):
-    #async with AccountService() as account_service:
-    #    await account_service.authorize_accounts()
+    await relogin_accounts()
     yield
 
 

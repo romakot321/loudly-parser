@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import Depends
 
 from app.db.tables import Account, TaskItem
+from app.services.account import AccountService
 from app.repositories.external import ExternalRepository
 from app.repositories.task import TaskRepository
 from app.schemas.external import ExternalGenerationRequest
@@ -35,10 +36,19 @@ class TaskService:
         await self.task_repository.refresh()
         return TaskSchema.model_validate(model.__dict__ | {"items": []})
 
+    async def _renew_tokens(self, account: Account):
+        async with AccountService() as account_service:
+            await account_service.authorize_accounts()
+
     async def _send(self, task_id: UUID, request: ExternalGenerationRequest, account: Account):
-        generation = await self.external_repository.generate(
-            request, account.access_token
-        )
+        try:
+            generation = await self.external_repository.generate(
+                request, account.access_token
+            )
+        except ValueError as e:
+            if '401' in str(e):
+                await self._renew_tokens(account)
+                return await self._send(task_id, request, account)
 
         response = None
         for _ in range(12):
