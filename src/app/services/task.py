@@ -1,4 +1,5 @@
 import asyncio
+from loguru import logger
 from uuid import UUID
 from fastapi import Depends
 
@@ -36,9 +37,13 @@ class TaskService:
         await self.task_repository.refresh()
         return TaskSchema.model_validate(model.__dict__ | {"items": []})
 
-    async def _renew_tokens(self, account: Account):
+    async def _renew_tokens(self, account: Account) -> Account:
         async with AccountService() as account_service:
-            await account_service.authorize_accounts()
+            accounts = await account_service.authorize_accounts()
+        for acc in accounts:
+            if acc.id == account.id:
+                return acc
+        raise ValueError("Account with id #" + str(account.id) + " not found")
 
     async def _send(self, task_id: UUID, request: ExternalGenerationRequest, account: Account):
         try:
@@ -47,14 +52,28 @@ class TaskService:
             )
         except ValueError as e:
             if '401' in str(e):
-                await self._renew_tokens(account)
+                account = await self._renew_tokens(account)
                 return await self._send(task_id, request, account)
+            return await self.task_repository.update(task_id, error=str(e))
 
         response = None
         for _ in range(12):
-            external_task = await self.external_repository.get_generation(
-                generation.id, account.access_token
-            )
+            try:
+                external_task = await self.external_repository.get_generation(
+                    generation.id, account.access_token
+                )
+            except ValueError as e:
+                if '401' in str(e):
+                    account = await self._renew_tokens(account)
+                    external_task = await self.external_repository.get_generation(
+                        generation.id, account.access_token
+                    )
+                else:
+                    await self.task_repository.update(task_id, error=str(e))
+                    raise e
+            except Exception as e:
+                return await self.task_repository.update(task_id, error=str(e))
+
             if external_task.errors:
                 return await self.task_repository.update(task_id, error=str(external_task.errors))
             if external_task.is_finished:

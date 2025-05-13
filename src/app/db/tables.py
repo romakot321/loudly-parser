@@ -25,7 +25,7 @@ from sqlalchemy_service.base_db.base import ServiceEngine
 
 sql_utcnow = text("(now() at time zone 'utc')")
 
-engine = ServiceEngine()
+engine = ServiceEngine(pool_size=20)
 
 
 class BaseMixin:

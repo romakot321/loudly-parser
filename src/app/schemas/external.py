@@ -25,11 +25,12 @@ class ExternalAccountLimitsSchema(BaseModel):
 class ExternalAuthorizeRequestSchema(BaseModel):
     client_id: str
     grant_type: str
+    username: str | None = None
     password: str | None = None
     refresh_token: str | None = None
 
     def to_params(self) -> str:
-        return quote_plus("&".join(f"{k}={v}" for k, v in self.model_dump(exclude_none=True).items()))
+        return "&".join(f"{k}=" + quote_plus(v) for k, v in self.model_dump(exclude_none=True).items())
 
 
 class ExternalAuthorizeResponseSchema(BaseModel):

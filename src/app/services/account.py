@@ -16,8 +16,9 @@ class AccountService:
         self.account_repository = account_repository
         self.external_repository = external_repository
 
-    async def authorize_accounts(self):
+    async def authorize_accounts(self) -> list[Account]:
         accounts = await self.account_repository.list()
+        authorized_accounts = []
         for account in accounts:
             if (await self.external_repository.get_limits(account)) is not None:
                 continue
@@ -28,11 +29,13 @@ class AccountService:
                     )
                 except ValueError as e:
                     tokens = await self.external_repository.login_with_password(account)
-            await self.account_repository.update(
+            authorized_account = await self.account_repository.update(
                 account.id,
                 refresh_token=tokens.refresh_token,
                 access_token=tokens.access_token,
             )
+            authorized_accounts.append(authorized_account)
+        return authorized_accounts
 
     @classmethod
     async def get_available_account(
